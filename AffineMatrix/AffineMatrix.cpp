@@ -1,7 +1,4 @@
-﻿// AffineMatrix.cpp : Bu dosya 'main' işlevi içeriyor. Program yürütme orada başlayıp biter.
-//
-
-#include <iostream>
+﻿#include <iostream>
 #include <opencv2/core/core.hpp>
 #include <opencv2/opencv.hpp> 
 
@@ -26,14 +23,10 @@ int main()
     }
 
     Mat newImage; // create a new matris of the image
-    
-    imshow("Orijinal Resim", image);
-    
+     
 	forwardMapping(image);
 	backwardMapping(image);
-    backwardMappingWithInterpolation(image);
-
-    
+    backwardMappingWithInterpolation(image); 
 
     cv::waitKey(0);
 
@@ -47,16 +40,17 @@ void forwardMapping(const Mat& image) {
     double a, b, tx;
     double c, d, ty;
 
-#if 1 // zoom image 1.4x
+#if 0 // zoom image 1.4x
     
     a = 1.4, b = 0, tx = 1;
     c = 0, d = 1.4, ty = 1;
     Mat zoomAffineMax = (Mat_<double>(2, 3) << a, b, tx, c, d, ty); 
-    Mat zoomImage(height, width, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image 
+    // new Image 
+    Mat zoomImage(height, width, CV_8UC3, cv::Scalar(0, 0, 0)); 
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            int newX = static_cast<int>(x * zoomAffineMax.at<double>(0, 0)); // zoom bolgesi -> 1 * (zoomAffineMax.at<double>(0, 0) - tx)
+            int newX = static_cast<int>(x * zoomAffineMax.at<double>(0, 0));
             int newY = static_cast<int>(y * zoomAffineMax.at<double>(1, 1));
             if (newX > 0 && newX < width && newY > 0 && newY < height) {
                 zoomImage.at<cv::Vec3b>(newY, newX) = image.at<cv::Vec3b>(y, x); // Forward mapping
@@ -64,7 +58,10 @@ void forwardMapping(const Mat& image) {
         }
     }
 
-    imshow("zoomed image", zoomImage);
+    imshow("zoomFoward", zoomImage);
+    if (!imwrite("zoomFoward.jpg", zoomImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 #endif
 
 #if 0 // horizotanl shear image 1.4x
@@ -73,19 +70,23 @@ void forwardMapping(const Mat& image) {
     c = 0, d = 1, ty = 1;
     int newWidth = width + (height * b);
     Mat horizantalShearAffMax= (Mat_<double>(2, 3) << a, b, tx, c, d, ty);
-    Mat shearImage(height, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image 
+    // new Image 
+    Mat shearImage(height, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); 
     
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             int newX =  static_cast<int>(x + (y * horizantalShearAffMax.at<double>(0, 1)));
             int newY = static_cast<int>(y); 
             if (newX >= 0 && newX < newWidth && newY >= 0 && newY < height) {
-                shearImage.at<cv::Vec3b>(newY, newX) = image.at<cv::Vec3b>(y, x); // Forward mapping
+                // Forward mapping
+                shearImage.at<cv::Vec3b>(newY, newX) = image.at<cv::Vec3b>(y, x);
             }
         }
     }
 
-    imshow("Horizantal Shear", shearImage);
+    if (!imwrite("HorizantalShearForward.jpg", shearImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 #endif
 
 #if 0 // scale image 1.4x
@@ -95,22 +96,26 @@ void forwardMapping(const Mat& image) {
     int newHeight = a * height;
     int newWidth = d * width;
     Mat scaleAffMax = (Mat_<double>(2, 3) << a, b, tx, c, d, ty);
-    Mat scaleImage(newHeight, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image 
+    // new Image
+    Mat scaleImage(newHeight, newWidth, CV_8UC3, cv::Scalar(0, 0, 0));  
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             int newX = static_cast<int>(x * scaleAffMax.at<double>(0, 0));
             int newY = static_cast<int>(y * scaleAffMax.at<double>(1, 1));
             if (newX >= 0 && newX < newWidth && newY >= 0 && newY < newHeight) {
-                scaleImage.at<cv::Vec3b>(newY, newX) = image.at<cv::Vec3b>(y, x); // Forward mapping
+                // Forward mapping
+                scaleImage.at<cv::Vec3b>(newY, newX) = image.at<cv::Vec3b>(y, x); 
             }
         }
     }
-
-    imshow("scaled image", scaleImage);
+     
+    if (!imwrite("scaledIimageForward.jpg", scaleImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 #endif
 
-#if 0 // rotate image 60 degree
+#if 1 // rotate image 60 degree
 
     int centerX0 = width/ 2;
     int centerY0 = height / 2;
@@ -127,7 +132,8 @@ void forwardMapping(const Mat& image) {
     ty = (newHeight / 2.0) - (centerX0 * c + centerY0 * d);
 
     Mat scaleAffMax = (Mat_<double>(2, 3) << a, b, tx, c, d, ty);
-    Mat rotateImage(newHeight, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image 
+    // new Image
+    Mat rotateImage(newHeight, newWidth, CV_8UC3, cv::Scalar(0, 0, 0));  
 
     // rotate
     for (int y = 0; y < height; ++y) {
@@ -135,16 +141,16 @@ void forwardMapping(const Mat& image) {
             int newX = static_cast<int>((x * scaleAffMax.at<double>(0, 0)) + (y * scaleAffMax.at<double>(0, 1)) + scaleAffMax.at<double>(0, 2));
             int newY = static_cast<int>((x * scaleAffMax.at<double>(1, 0)) + (y * scaleAffMax.at<double>(1, 1)) + scaleAffMax.at<double>(1, 2));
             if (newX >= 0 && newX < newWidth +200 && newY >= 0 && newY < newHeight) {
-                rotateImage.at<cv::Vec3b>(newY, newX) = image.at<cv::Vec3b>(y, x); // Forward mapping
+                // Forward mapping
+                rotateImage.at<Vec3b>(newY, newX) = image.at<Vec3b>(y, x); 
             }
         }
     }
 
 
-    imshow("rotated image", rotateImage);
-    /*if (!imwrite("rotated_image.jpg", rotateImage)) {
-        std::cerr << "nanay!" << std::endl;
-    }*/
+    if (!imwrite("rotated_imageForward.jpg", rotateImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 #endif
     return;
 }
@@ -161,19 +167,23 @@ void backwardMapping(const Mat& image) {
     a = 1.4, b = 0, tx = 1;
     c = 0, d = 1.4, ty = 1;
     Mat zoomAffineMax = (Mat_<double>(2, 3) << a, b, tx, c, d, ty);
-    Mat zoomImage(height , width, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image wiht same size
+    // new Image wiht same size
+    Mat zoomImage(height , width, CV_8UC3, cv::Scalar(0, 0, 0)); 
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            int newX = static_cast<int>(x / zoomAffineMax.at<double>(0, 0)); // zoom bolgesi -> 1 * (zoomAffineMax.at<double>(0, 0) - tx)
+            int newX = static_cast<int>(x / zoomAffineMax.at<double>(0, 0)); 
             int newY = static_cast<int>(y / zoomAffineMax.at<double>(1, 1));
             if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
-                zoomImage.at<cv::Vec3b>(y, x) = image.at<cv::Vec3b>(newY, newX); // Backward mapping
+                // Backward mapping
+                zoomImage.at<cv::Vec3b>(y, x) = image.at<cv::Vec3b>(newY, newX); 
             }
         }
     }
 
-    imshow("zoomed image", zoomImage);
+    if (!imwrite("zoomBackward.jpg", zoomImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 #endif
 
 #if 0 // horizotanl shear image 1.4x
@@ -182,7 +192,8 @@ void backwardMapping(const Mat& image) {
     c = 0, d = 1, ty = 1;
     int newWidth = width + (height * b);
     Mat horizantalShearAffMax = (Mat_<double>(2, 3) << a, b, tx, c, d, ty);
-    Mat shearImage(height, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image 
+    // new Image 
+    Mat shearImage(height, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); 
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < newWidth; ++x) {
@@ -194,7 +205,9 @@ void backwardMapping(const Mat& image) {
         }
     }
 
-    imshow("Horizantal Shear", shearImage);
+    if (!imwrite("HorizantalShearBackward.jpg", shearImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 #endif
 
 #if 0 // scale image 1.4x
@@ -214,9 +227,10 @@ void backwardMapping(const Mat& image) {
                 scaleImage.at<cv::Vec3b>(y, x) = image.at<cv::Vec3b>(imageY, imageX); // Backward mapping
             }
         }
+    } 
+    if (!imwrite("scaledIimageBackward.jpg", scaleImage)) {
+        std::cerr << "write error!" << std::endl;
     }
-
-    imshow("scaled image", scaleImage);
 #endif
 
 #if 0 // rotate image 60 degree
@@ -238,15 +252,11 @@ void backwardMapping(const Mat& image) {
     Mat scaleAffMax = (Mat_<double>(2, 3) << a, b, tx, c, d, ty);
     Mat rotateImage(newHeight, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image 
 
-    // before inverse
-    cout << " a ,b, tx, c, d, ty " << (scaleAffMax.at<double>(0, 0))<<" " << a << " " << b << " " << tx << " " << c << " " << d << " " << ty << endl;
-
-	if (inverseOfAffineMax(scaleAffMax) == false) {
+    if (inverseOfAffineMax(scaleAffMax) == false) {
 		std::cerr << "Affine matrix didnt turn inverse itself" << std::endl;
 		return ;
 	}
-    cout << " a ,b, tx, c, d, ty " << (scaleAffMax.at<double>(0, 0)) << " " << a << " " << b << " " << tx << " " << c << " " << d << " " << ty << endl;
-     
+      
     // rotate
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
@@ -260,9 +270,8 @@ void backwardMapping(const Mat& image) {
     }
 
 
-    imshow("rotated image", rotateImage);
     if (!imwrite("rotated_imageBackward.jpg", rotateImage)) {
-        std::cerr << "nanay!" << std::endl;
+        std::cerr << "write error!" << std::endl;
     }
 #endif
     return;
@@ -275,7 +284,7 @@ void backwardMappingWithInterpolation(const Mat& image) {
     double a, b, tx;
     double c, d, ty;
 
-#if 0 // zoom image 1.4x
+#if 0// zoom image 1.4x
 
     a = 1.4, b = 0, tx = 1;
     c = 0, d = 1.4, ty = 1;
@@ -293,7 +302,11 @@ void backwardMappingWithInterpolation(const Mat& image) {
         }
     }
 
-    imshow("zoomed image", zoomImage);
+    //imshow("zoomed image", zoomImage);
+    if (!imwrite("zoomBackwardInterpol.jpg", zoomImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
+
 #endif
 
 #if 0 // horizotanl shear image 1.4x
@@ -306,15 +319,17 @@ void backwardMappingWithInterpolation(const Mat& image) {
 
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < newWidth; ++x) {
-            int imageX = static_cast<int>(x - (y * horizantalShearAffMax.at<double>(0, 1)));
-            int imageY = static_cast<int>(y);
-            if (imageX >= 0 && imageX < width && imageY >= 0 && imageY < height) {
-                shearImage.at<cv::Vec3b>(y, x) = image.at<cv::Vec3b>(imageY, imageX); // Backward mapping
+            int newX = static_cast<int>(x - (y * horizantalShearAffMax.at<double>(0, 1)));
+            int newY = static_cast<int>(y);
+            if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                shearImage.at<cv::Vec3b>(y, x) = calculateBilinearValue(image, newY, newX);  // Backward mapping with interpolation
             }
         }
     }
 
-    imshow("Horizantal Shear", shearImage);
+    if (!imwrite("HorizantalShearInterpolation.jpg", shearImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 #endif
 
 #if 0 // scale image 1.4x
@@ -328,15 +343,18 @@ void backwardMappingWithInterpolation(const Mat& image) {
 
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
-            int imageX = static_cast<int>(x / scaleAffMax.at<double>(0, 0));
-            int imageY = static_cast<int>(y / scaleAffMax.at<double>(1, 1));
-            if (imageX >= 0 && imageX < width && imageY >= 0 && imageY < height) {
-                scaleImage.at<cv::Vec3b>(y, x) = image.at<cv::Vec3b>(imageY, imageX); // Backward mapping
+            int newX = static_cast<int>(x / scaleAffMax.at<double>(0, 0));
+            int newY = static_cast<int>(y / scaleAffMax.at<double>(1, 1));
+            if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                scaleImage.at<cv::Vec3b>(y, x) = calculateBilinearValue(image, newY, newX); // Backward mapping
             }
         }
     }
+     
+    if (!imwrite("scaledIimageBackwardInterpolation.jpg", scaleImage)) {
+        std::cerr << "write error!" << std::endl;
+    }
 
-    imshow("scaled image", scaleImage);
 #endif
 
 #if 0 // rotate image 60 degree
@@ -359,70 +377,61 @@ void backwardMappingWithInterpolation(const Mat& image) {
     Mat rotateImage(newHeight, newWidth, CV_8UC3, cv::Scalar(0, 0, 0)); // new Image 
 
     // before inverse
-    cout << " a ,b, tx, c, d, ty " << (scaleAffMax.at<double>(0, 0)) << " " << a << " " << b << " " << tx << " " << c << " " << d << " " << ty << endl;
-
+    
     if (inverseOfAffineMax(scaleAffMax) == false) {
         std::cerr << "Affine matrix didnt turn inverse itself" << std::endl;
         return;
     }
-    cout << " a ,b, tx, c, d, ty " << (scaleAffMax.at<double>(0, 0)) << " " << a << " " << b << " " << tx << " " << c << " " << d << " " << ty << endl;
-
+    
     // rotate
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
-            int imageX = static_cast<int>((x * scaleAffMax.at<double>(0, 0)) + (y * scaleAffMax.at<double>(0, 1)) + scaleAffMax.at<double>(0, 2));
-            int imageY = static_cast<int>((x * scaleAffMax.at<double>(1, 0)) + (y * scaleAffMax.at<double>(1, 1)) + scaleAffMax.at<double>(1, 2));
-            //cout << "image x " << imageX;
-            if (imageX >= 0 && imageX < width && imageY >= 0 && imageY < height) {
-                rotateImage.at<cv::Vec3b>(y, x) = image.at<cv::Vec3b>(imageY, imageX); // Backward mapping
+            int newX = static_cast<int>((x * scaleAffMax.at<double>(0, 0)) + (y * scaleAffMax.at<double>(0, 1)) + scaleAffMax.at<double>(0, 2));
+            int newY = static_cast<int>((x * scaleAffMax.at<double>(1, 0)) + (y * scaleAffMax.at<double>(1, 1)) + scaleAffMax.at<double>(1, 2));
+            
+            if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                rotateImage.at<cv::Vec3b>(y, x) = calculateBilinearValue(image, newY, newX); // Backward mapping
             }
         }
     }
 
 
-    imshow("rotated image", rotateImage);
-    if (!imwrite("rotated_imageBackward.jpg", rotateImage)) {
-        std::cerr << "nanay!" << std::endl;
+    if (!imwrite("rotated_imageBackwardInterpol.jpg", rotateImage)) {
+        std::cerr << "write error!" << std::endl;
     }
 #endif
     return;
 }
 
 bool inverseOfAffineMax(Mat& affineMax) {
-    // 2x3 boyutundaki affine dönüşüm matrisini 2x2 boyutuna dönüştürme
     double a = affineMax.at<double>(0, 0);
     double b = affineMax.at<double>(0, 1);
     double tx = affineMax.at<double>(0, 2);
     double c = affineMax.at<double>(1, 0);
     double d = affineMax.at<double>(1, 1);
     double ty = affineMax.at<double>(1, 2);
-
-    // Determinantı hesapla
+     
+    // calcukale determinant
     double det = a * d - b * c;
     if (det == 0) {
-        return false; // Tersini hesaplamak mümkün değil
+		return false;  // not found deteerminant
     }
-
-    // Ters matrisin hesaplanması
-    double invDet = 1.0 / det;
-
-    // Ters matrisin bileşenlerini ayarlama
+     
+     
     Mat inverseMat = (Mat_<double>(2, 3) <<
-        d * invDet, -b * invDet, (b * ty - d * tx) * invDet,
-        -c * invDet, a * invDet, (c * tx - a * ty) * invDet
+        d * (1 / det), -b * (1 / det), (b * ty - d * tx) * (1/det),
+        -c * (1 / det), a * (1 / det), (c * tx - a * ty) * (1 / det)
         );
-
-    // Sonucu affineMax matrisine yaz
-    inverseMat.copyTo(affineMax);
-
-    return true; // Ters hesaplama başarılı
+     
+    inverseMat.copyTo(affineMax); 
+    return true;  
 }
 
 Vec3b calculateBilinearValue(const Mat& image, const double &y, const double& x) {
     int x1 = static_cast<int>(x); // min round x
     int y1 = static_cast<int>(y); // min round y
-    int x2 = min(x1 + 1, image.cols - 1); //  x1 + 1;
-    int y2 = min(y1 + 1, image.rows - 1); //y1 + 1;
+    int x2 = min(x1 + 1, image.cols - 1); //  x1 + 1 is top border
+    int y2 = min(y1 + 1, image.rows - 1); //  y1 + 1 is top border
      
 
     Vec3b Q11 = image.at<Vec3b>(y1, x1);
@@ -433,8 +442,7 @@ Vec3b calculateBilinearValue(const Mat& image, const double &y, const double& x)
 
     double div = ((x2 - x1) * (y2 - y1));
 
-    if (div <= 0) {
-        cout << " e1"; 
+    if (div <= 0) { 
         return Q11;
     }
 
